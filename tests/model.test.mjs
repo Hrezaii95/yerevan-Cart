@@ -1,0 +1,16 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {calculate, validateDecision} from '../lib/model.ts';
+const offer = {id:'one',name:'Pillow',seller:'Supplier',source:'local',unitPrice:2000,packSize:2,shipping:1000,fees:0,days:3,quality:'value',url:'https://example.com/product',observedAt:'2026-10-02',notes:'',evidence:'user'};
+const decision = {version:1,title:'Four pillows',quantity:3,maxQuantity:4,budget:20000,maxDays:14,offers:[offer]};
+test('rounds to feasible pack, totals goods and shipping',()=>{const r=calculate(validateDecision(decision))[0];assert.equal(r.quantity,4);assert.equal(r.total,9000);assert.equal(r.eligible,true)});
+test('unknown shipping leaves total null and disqualifies winner',()=>{const r=calculate({...decision,offers:[{...offer,shipping:null}]})[0];assert.equal(r.total,null);assert.equal(r.subtotal,8000);assert.equal(r.eligible,false)});
+test('zero is confirmed zero, not unknown',()=>assert.equal(calculate({...decision,offers:[{...offer,shipping:0}]})[0].total,8000));
+test('cannot buy above maximum',()=>assert.equal(calculate({...decision,maxQuantity:3})[0].eligible,false));
+test('budget and deadline are gates',()=>{assert.equal(calculate({...decision,budget:100})[0].eligible,false);assert.equal(calculate({...decision,maxDays:2})[0].eligible,false)});
+test('unknown delivery cannot meet deadline',()=>assert.equal(calculate({...decision,offers:[{...offer,days:null}]})[0].eligible,false));
+test('reject dangerous links and invalid numeric inputs',()=>{for(const url of ['javascript:alert(1)','http://localhost/x','https://127.0.0.1/x'])assert.throws(()=>validateDecision({...decision,offers:[{...offer,url}]}));for(const quantity of [0,-1,1.5,10001])assert.throws(()=>validateDecision({...decision,quantity}));assert.throws(()=>validateDecision({...decision,offers:[{...offer,unitPrice:-1}]}))});
+test('reject excessive offers and strip unrecognized fields',()=>{assert.throws(()=>validateDecision({...decision,offers:Array(21).fill(offer)}));assert.equal(validateDecision({...decision,userId:'another'}).userId,undefined)});
+test('reject duplicate offer ids and invalid dates',()=>{assert.throws(()=>validateDecision({...decision,offers:[offer,offer]}));assert.throws(()=>validateDecision({...decision,offers:[{...offer,observedAt:'nonsense'}]}))});
+test('changing purchased quantity invalidates freight quote',()=>{const d=validateDecision(decision);const r=calculate({...d,quantity:8,maxQuantity:8})[0];assert.equal(r.total,null);assert.equal(r.eligible,false);assert.equal(r.subtotal,16000)});
+test('invalid live draft cannot produce results',()=>{for(const quantity of [0,-1,NaN,1.5])assert.deepEqual(calculate({...decision,quantity}),[])});

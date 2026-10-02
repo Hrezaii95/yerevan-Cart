@@ -1,0 +1,6 @@
+import {getChatGPTUser} from '../../chatgpt-auth';
+import {listDecisions,saveDecision,deleteDecision} from '@/lib/store';
+import {readBody,sameOrigin,errorResponse} from '@/lib/http';
+export async function GET(){const user=await getChatGPTUser();if(!user)return Response.json({error:'auth'},{status:401});try{return Response.json(await listDecisions(user.userId),{headers:{'Cache-Control':'private, no-store'}})}catch(e){return errorResponse(e)}}
+export async function POST(request:Request){const user=await getChatGPTUser();if(!user)return Response.json({error:'auth'},{status:401});if(!sameOrigin(request))return Response.json({error:'forbidden'},{status:403});try{const b=await readBody(request) as {decision:unknown;id?:string};if(!b||typeof b!=='object')throw new Error('invalid');return Response.json(await saveDecision(user.userId,b.decision,b.id),{headers:{'Cache-Control':'no-store'}})}catch(e){return errorResponse(e)}}
+export async function DELETE(request:Request){const user=await getChatGPTUser();if(!user)return Response.json({error:'auth'},{status:401});if(!sameOrigin(request))return Response.json({error:'forbidden'},{status:403});try{const id=new URL(request.url).searchParams.get('id');if(!id||id.length>80)throw new Error('invalid');await deleteDecision(user.userId,id);return Response.json({ok:true})}catch(e){return errorResponse(e)}}
