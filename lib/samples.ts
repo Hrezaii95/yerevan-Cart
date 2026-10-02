@@ -10,6 +10,19 @@ export function sample(locale:Locale):Decision {
  d.offers=d.offers.map(o=>({...o,evaluation:illustrativeEvaluation(o)}));return d;
 }
 
+// Upgrade only the exact untouched v1 fixture. Any user change preserves the draft.
+export function upgradeOriginalSample(d:Decision):Decision {
+ if(d.offers.some(o=>o.evaluation)||d.offers.length!==4)return d;
+ for(const locale of ['en','ru','hy'] as const){
+  const next=sample(locale),old=structuredClone(next);
+  for(const o of old.offers)delete o.evaluation;
+  old.offers[1].shipping=2500;
+  const sameBrief=(['title','quantity','maxQuantity','budget','maxDays'] as const).every(k=>d[k]===old[k]);
+  if(sameBrief&&old.offers.every((o,i)=>Object.entries(o).every(([key,value])=>d.offers[i][key as keyof Offer]===value)))return next;
+ }
+ return d;
+}
+
 function illustrativeEvaluation(offer:Offer):Evaluation {
  const e=emptyEvaluation();
  const evidence={reference:'SYNTHETIC demonstration fixture; not a seller quote or verified claim',observedAt:'2026-10-02'};
