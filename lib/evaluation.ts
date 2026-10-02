@@ -11,7 +11,7 @@ export const rubrics = {
 } as const;
 export type AssessmentKind = keyof typeof rubrics;
 export type Evidence = {reference: string; observedAt: string};
-export type CostLine = {kind: CostKind; status: 'known'|'included'|'notApplicable'|'unknown'; amount: number|null; currency: string; rate: number|null; rateEvidence: Evidence|null; evidence: Evidence|null; reason: string; includedIn: CostKind|null};
+export type CostLine = {kind: CostKind; status: 'known'|'included'|'notApplicable'|'unknown'; amount: number|null; amountHigh?:number; currency: string; rate: number|null; rateEvidence: Evidence|null; evidence: Evidence|null; reason: string; includedIn: CostKind|null};
 export type Gate = {status: 'pass'|'pending'|'fail'; reason: string; evidence: Evidence|null};
 export type Rating = {applicable: boolean; rating: number|null; reason: string; evidence: Evidence|null};
 export type Evaluation = {version: 1; reviewRequired?: boolean; validUntil: string|null; gates: Record<GateKind, Gate>; costs: CostLine[]; assessments: Partial<Record<AssessmentKind, Record<string, Rating>>>};
@@ -48,13 +48,15 @@ export function validateEvaluation(input: unknown): Evaluation {
   const costs = e.costs.map((raw): CostLine => {
     const c = obj(raw);
     const line: CostLine = {kind:member(c.kind,costKinds),status:member(c.status,['known','included','notApplicable','unknown']),amount:c.amount===null?null:number(c.amount,1e9),currency:text(c.currency,3),rate:c.rate===null?null:number(c.rate,1e6),rateEvidence:evidence(c.rateEvidence),evidence:evidence(c.evidence),reason:text(c.reason),includedIn:c.includedIn===null?null:member(c.includedIn,costKinds)};
+    if(c.amountHigh!==undefined)line.amountHigh=number(c.amountHigh,1e9);
     if (!/^[A-Z]{3}$/.test(line.currency)) invalid();
     if (line.status !== 'unknown' && (!line.reason || !line.evidence)) invalid();
     if (line.status === 'known') {
       if (line.amount === null || line.rate === null || line.rate <= 0 || (line.currency === 'AMD' && line.rate !== 1) || (line.currency !== 'AMD' && !line.rateEvidence)) invalid();
       // Monetary precision is explicit; avoid accepting values silently rounded during import.
       if (Math.abs(line.amount*100-Math.round(line.amount*100)) > 1e-5 || Math.abs(line.rate*1e6-Math.round(line.rate*1e6)) > 1e-4) invalid();
-    } else if (line.amount !== null) invalid();
+          if(line.amountHigh!==undefined&&(line.amountHigh<line.amount||Math.abs(line.amountHigh*100-Math.round(line.amountHigh*100))>1e-5))invalid();
+    } else if (line.amount !== null||line.amountHigh!==undefined) invalid();
     if ((line.status === 'included') !== (line.includedIn !== null)) invalid();
     if (line.kind === 'goods' && !['known','unknown'].includes(line.status)) invalid();
     if (line.kind === 'discount' && line.status === 'included') invalid();
@@ -93,22 +95,24 @@ export function assess(kind: AssessmentKind, rows: Record<string,Rating>|undefin
   const score = weight && covered===applicable ? Math.round(10000*value/weight)/100 : null;
   return {score, covered, applicable, confidence:!covered?'insufficient':covered===applicable?'supported':'partial'};
 }
-function amdMinor(c: CostLine): number {
+function amdMinor(c: CostLine,high=false): number {
   // Amount has two decimal places and rate six. Multiply in integers, then round half up to AMD cents.
-  const amount = BigInt(Math.round(c.amount!*100)), rate = BigInt(Math.round(c.rate!*1e6));
+  const amount = BigInt(Math.round((high?(c.amountHigh??c.amount!):c.amount!)*100)), rate = BigInt(Math.round(c.rate!*1e6));
   return Number((amount*rate+500000n)/1000000n);
 }
 export function evaluate(e: Evaluation, asOf: string) {
   const assessments = Object.fromEntries((Object.keys(rubrics) as AssessmentKind[]).map(k=>[k,assess(k,e.assessments[k])])) as Record<AssessmentKind,Assessment>;
-  const lines = e.costs.map(c=>({...c,amd:c.status==='known'?amdMinor(c)/100:c.status==='unknown'?null:0}));
+  const lines = e.costs.map(c=>({...c,amd:c.status==='known'?amdMinor(c)/100:c.status==='unknown'?null:0,amdHigh:c.status==='known'?amdMinor(c,true)/100:c.status==='unknown'?null:0}));
   const gross = lines.filter(c=>c.kind!=='discount').reduce((n,c)=>n+(c.amd===null?0:Math.round(c.amd*100)),0);
-  const discount = Math.round((lines.find(c=>c.kind==='discount')?.amd??0)*100);
-  const complete = !lines.some(c=>c.amd===null) && discount<=gross && Number.isSafeInteger(gross);
-  const subtotal = Math.max(0,gross-discount)/100;
+  const grossHigh = lines.filter(c=>c.kind!=='discount').reduce((n,c)=>n+(c.amdHigh===null?0:Math.round(c.amdHigh*100)),0);
+  const discountLine=lines.find(c=>c.kind==='discount');
+  const discount = Math.round((discountLine?.amd??0)*100),discountHigh=Math.round((discountLine?.amdHigh??0)*100);
+  const complete = !lines.some(c=>c.amd===null) && discountHigh<=gross && Number.isSafeInteger(grossHigh)&&Number.isSafeInteger(discountHigh);
+  const subtotalLow = Math.max(0,gross-discountHigh)/100,subtotal=Math.max(0,grossHigh-discount)/100;
   const allEvidence = [...e.costs.flatMap(c=>[c.evidence,c.rateEvidence]),...Object.values(e.gates).map(g=>g.evidence),...Object.values(e.assessments).flatMap(rows=>Object.values(rows).map(r=>r.evidence))];
   const fresh = !!e.validUntil && e.validUntil>=asOf && !allEvidence.some(v=>v && v.observedAt>asOf);
   const gatesPass = !e.reviewRequired && Object.values(e.gates).every(g=>g.status==='pass' && g.evidence && g.reason);
-  return {lines,subtotal,total:complete&&!e.reviewRequired?subtotal:null,assessments,fresh,gatesPass,qualityScore:assessments.product.score};
+  return {lines,subtotalLow,subtotal,totalLow:complete&&!e.reviewRequired?subtotalLow:null,total:complete&&!e.reviewRequired?subtotal:null,assessments,fresh,gatesPass,qualityScore:assessments.product.score};
 }
 
 /** Empty evidence is deliberately pending. It never upgrades old aggregates into proof. */

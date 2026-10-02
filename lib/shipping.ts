@@ -90,7 +90,7 @@ export function inspectRoute(route:DeliveryRoute,asOf=yerevanDate()){
  const missing:string[]=[];
  if(!arrival?.complete)missing.push('arrival');
  if(route.arrival&&['forwarded','consolidated'].includes(route.arrival.kind)&&!route.warehouseReference)missing.push('warehouse');
- if(freight){const line=route.evaluation.costs.find(l=>l.kind==='freight');if(!freight.complete||freight.low!==freight.high||line?.status!=='known'||line.currency!==freight.currency||line.amount!==freight.low)missing.push('freight');}
+ if(freight){const line=route.evaluation.costs.find(l=>l.kind==='freight');if(!freight.complete||line?.status!=='known'||line.currency!==freight.currency||line.amount!==freight.low||(line.amountHigh??line.amount)!==freight.high)missing.push('freight');}
  const days=arrival?.complete&&arrival.latest?Math.round((Date.parse(arrival.latest)-Date.parse(asOf))/86400000):null;
  return {route,freight,arrival,days,missing};
 }

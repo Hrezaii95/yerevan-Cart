@@ -43,3 +43,14 @@ The baseline table above records the initial v1 gaps; it is not the current feat
 - 61 unit tests pass. Local browser checks cover route switching, 8 kg/4,000 AMD synthetic freight, 28,700 AMD alternative total versus 31,200 original, transit-only rejection, base-quote editing, draft reload, multiline holidays, unknown new routes and three mobile languages.
 
 Task 2 is still incomplete: historical evidence fixture, full delivered-cost ranges, feasible-quantity/Pareto comparison and comparable baselines remain. Later account/service and real-account acceptance work also remains. Billing is intentionally deferred under the user's no-bank-account instruction. No commercial/pilot or native-speaker approval is inferred from automated checks.
+
+
+## Range and optimization update — 2 October 2026
+
+Implemented Task 2's remaining deterministic/demo behavior: original-currency amount ranges, integer FX rounding, reversed discount endpoints, upper-bound budgets/tier selection, explicit partial-subtotal labels, and a zero-upper-bound requirement for free delivery. Route freight range endpoints must reconcile with the cost ledger.
+
+The separate historical pillow fixture preserves the 2/4-piece goods-plus-freight sensitivities, personal 360 AMD/USD basis, 3.5–4 kg/pair scenario, variant/certificate conflicts, unknown fees and complete arrival, and original scoring-policy context. Historical numeric tests reconcile exactly; no historical offer qualifies. Public source links were rechecked against the original repository source registry P-S17/P-S20/P-S22. No private address or warehouse account mark is included.
+
+All supplied product/route/quantity quotes are enumerated without interpolating unquoted tariffs. Explicit purchase quantity preserves the customer's needed quantity. Same-quantity Pareto comparison requires non-overlapping cost bounds and no worse supported quality/timing. Savings are omitted unless the same item, quantity, complete delivery scope and dated cost/FX evidence are comparable; overlapping ranges do not create guaranteed savings.
+
+Verification: 82 unit tests, TypeScript, independent review, local authenticated MCP save/list, actual browser range editing/reload, optimizer selection, historical two/four quantities, invalid-input recovery, subtotal labeling, three languages and 320px price fit. Final publish/build status is recorded separately in the QA release evidence. No full launch completion is claimed: Task 3 service/account work and final real-account acceptance remain. Payment activation is deferred by the user's instruction.
