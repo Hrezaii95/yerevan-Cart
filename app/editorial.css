@@ -27,3 +27,20 @@
 @media(min-width:1051px){.sidebar{padding-right:350px}.sidebar nav{gap:3px}}
 
 html[lang=hy] .hero-copy h1{font-family:'Noto Sans Armenian',sans-serif;font-weight:500;font-size:clamp(34px,4.2vw,60px);letter-spacing:-.025em;line-height:1.2}html[lang=hy] .hero-copy h1 em{font-style:normal;font-weight:500}
+.route-controls {border-block:1px solid var(--border,#d9d2bd);padding:20px 0;margin:20px 0}
+.route-actions,.route-days {display:flex;gap:10px;flex-wrap:wrap;margin-block:12px}
+.route-summary {background:#f4ecd6;padding:18px;margin-top:16px;border-radius:4px}
+.route-summary h3,.route-summary h4 {margin-bottom:12px}
+.route-summary p {overflow-wrap:anywhere}
+.route-metrics {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:18px 0}
+.route-metrics small,.route-metrics strong {display:block}
+.route-metrics strong {font-size:1.25rem;margin-top:6px;overflow-wrap:anywhere}
+.route-timeline {padding-left:20px;display:grid;gap:14px}
+.route-timeline li span {display:block;font-size:.85rem;margin-top:4px}
+.route-form fieldset {margin:16px 0;padding:14px;border:1px solid #d9d2bd;min-width:0}
+.route-form legend {padding:0 6px;font-size:.85rem}
+.route-form .route-check {display:flex;align-items:center;gap:10px;margin:10px 0}
+.route-form .route-check input {width:18px;height:18px;flex:0 0 18px;margin:0}
+.route-form .route-days .route-check {flex-direction:column;gap:6px}
+.route-form section {margin:24px 0}
+@media(max-width:480px){.route-metrics{grid-template-columns:1fr}.route-actions .button{width:100%}}

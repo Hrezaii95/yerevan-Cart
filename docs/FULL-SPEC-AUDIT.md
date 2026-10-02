@@ -29,3 +29,17 @@ Baseline checked: commit c429792, deployed version 1. Previous turn made progres
 | Later watches/local companion/managed agent | Explicit later/optional scope in brief. Do not claim delivered or charge for these without supported access. |
 
 External inputs requested: merchant country/account; existing approved feeds or quote partners. Continue all independent engineering while awaiting them. Do not mark the goal complete until every applicable launch gate has direct evidence.
+
+
+## Current engineering evidence — route update, 2 October 2026
+
+The baseline table above records the initial v1 gaps; it is not the current feature inventory. UI/search v2 is published at 9b894db. The next route release adds:
+
+- Nine original-currency cost lines, evidence/FX basis, explicit gates, four rubrics, freshness and independently selected quality tiers (implemented in v2).
+- Provider-specific actual/volumetric billing, per-parcel/shipment minimums and rounding order, packing provenance and freight sensitivity bounds.
+- Up to three alternative routes per offer; switching uses that route's quantity, full-cost evidence and arrival window while preserving the original quote.
+- Calendar/working-day stages, explicit weekends/holidays and dependencies, consolidation and split first/all arrivals; transit-only input cannot qualify as door delivery. Buyer deadline includes waiting before a future route start.
+- EN/RU/HY route editor, timeline/source display and MCP schema parity. Newly added routes require their own costs and evidence.
+- 61 unit tests pass. Local browser checks cover route switching, 8 kg/4,000 AMD synthetic freight, 28,700 AMD alternative total versus 31,200 original, transit-only rejection, base-quote editing, draft reload, multiline holidays, unknown new routes and three mobile languages.
+
+Task 2 is still incomplete: historical evidence fixture, full delivered-cost ranges, feasible-quantity/Pareto comparison and comparable baselines remain. Later account/service and real-account acceptance work also remains. Billing is intentionally deferred under the user's no-bank-account instruction. No commercial/pilot or native-speaker approval is inferred from automated checks.
