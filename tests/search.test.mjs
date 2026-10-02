@@ -1,0 +1,11 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import * as search from '../lib/search.ts';
+import {sample} from '../lib/samples.ts';
+test('search requests carry the new product and chosen marketplace',()=>{assert.match(search.providerQuery('wireless headphones','temu'),/wireless headphones.*site:temu.com/);assert.doesNotMatch(search.providerQuery('desk lamp','all'),/pillow/)});
+test('empty upstream results remain empty rather than fabricated offers',()=>{assert.deepEqual(search.normalizeResults({web:[],images:[]}),[])});
+test('search accepts all three languages and rejects empty or huge queries',()=>{for(const q of ['headphones','наушники','ականջակալներ'])assert.equal(search.validateSearch({query:q,locale:'en',source:'all'}).query,q);for(const q of ['', 'a'.repeat(181)])assert.throws(()=>search.validateSearch({query:q}))});
+test('result normalization removes unsafe URLs and deduplicates exact source pages',()=>{const r=search.normalizeResults({web:[{title:'Headphones',url:'https://shop.am/item',description:'Wireless'}],images:[{title:'Headphones',url:'https://shop.am/item',imageUrl:'https://cdn.shop.am/image.jpg'},{title:'bad',url:'javascript:alert(1)',imageUrl:'https://x.com/a'}]});assert.equal(r.length,1);assert.equal(r[0].image,'https://cdn.shop.am/image.jpg');assert.equal(r[0].description,'Wireless');assert.equal(r[0].url,'https://shop.am/item')});
+test('images never attach to a different product on the same domain',()=>{const r=search.normalizeResults({web:[{title:'Headphones',url:'https://shop.am/item'}],images:[{title:'Lamp',url:'https://shop.am/lamp',imageUrl:'https://cdn.shop.am/lamp.jpg'}]});assert.equal(r.find(x=>x.title==='Headphones').image,null)});
+test('Temu demonstration shows free delivery without hidden replacement fees',()=>{const o=sample('en').offers.find(o=>o.source==='temu');assert.equal(o.shipping,0);assert.equal(o.fees,0);assert.equal(o.evaluation.costs.find(c=>c.kind==='freight').amount,0)});
+test('native source links encode the actual query safely',()=>{const links=search.sourceSearchLinks('lamp & chair');assert.ok(links.every(l=>l.url.startsWith('https://')));assert.ok(links.every(l=>new URL(l.url).search.includes('lamp')))});
